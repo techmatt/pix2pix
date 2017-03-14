@@ -13,17 +13,17 @@ require 'models'
 
 opt = {
    DATA_ROOT = '',         -- path to images (should have subfolders 'train', 'val', etc)
-   batchSize = 1,          -- # images in batch
+   batchSize = 4,          -- # images in batch
    loadSize = 286,         -- scale images to this size
    fineSize = 256,         --  then crop to this size
    ngf = 64,               -- #  of gen filters in first conv layer
    ndf = 64,               -- #  of discrim filters in first conv layer
    input_nc = 3,           -- #  of input image channels
    output_nc = 3,          -- #  of output image channels
-   niter = 200,            -- #  of iter at starting learning rate
+   niter = 500,            -- #  of iter at starting learning rate
    lr = 0.0002,            -- initial learning rate for adam
    beta1 = 0.5,            -- momentum term of adam
-   ntrain = math.huge,     -- #  of examples per epoch. math.huge for full dataset
+   ntrain = math.huge,          -- #  of examples per epoch. math.huge for full dataset
    flip = 1,               -- if flip the images for data argumentation
    display = 1,            -- display samples while training. 0 = false
    display_id = 10,        -- display window id.
@@ -48,9 +48,9 @@ opt = {
    use_GAN = 1,                       -- set to 0 to turn off GAN term
    use_L1 = 1,                        -- set to 0 to turn off L1 term
    which_model_netD = 'basic', -- selects model to use for netD
-   which_model_netG = 'unet',  -- selects model to use for netG
+   which_model_netG = 'unet_256',  -- selects model to use for netG
    n_layers_D = 0,             -- only used if which_model_netD=='n_layers'
-   lambda = 100,               -- weight on L1 term in objective
+   lambda = 1000,               -- weight on L1 term in objective
 }
 
 -- one-line argument parser. parses enviroment variables to override the defaults
@@ -108,7 +108,7 @@ local fake_label = 0
 function defineG(input_nc, output_nc, ngf)
     local netG = nil
     if     opt.which_model_netG == "encoder_decoder" then netG = defineG_encoder_decoder(input_nc, output_nc, ngf)
-    elseif opt.which_model_netG == "unet" then netG = defineG_unet(input_nc, output_nc, ngf)
+    elseif opt.which_model_netG == "unet_256" then netG = defineG_unet_256(input_nc, output_nc, ngf)
     elseif opt.which_model_netG == "unet_128" then netG = defineG_unet_128(input_nc, output_nc, ngf)
     else error("unsupported netG model")
     end
@@ -335,6 +335,12 @@ local plot_win
 local counter = 0
 for epoch = 1, opt.niter do
     epoch_tm:reset()
+	
+	if epoch % 100 == 0 then
+		optimStateG.learningRate = optimStateG.learningRate / 2.0
+		optimStateD.learningRate = optimStateD.learningRate / 2.0
+	end
+	
     for i = 1, math.min(data:size(), opt.ntrain), opt.batchSize do
         tm:reset()
         
@@ -430,7 +436,6 @@ for epoch = 1, opt.niter do
         end
         
     end
-    
     
     parametersD, gradParametersD = nil, nil -- nil them to avoid spiking memory
     parametersG, gradParametersG = nil, nil

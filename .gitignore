@@ -44,3 +44,6 @@ checkpoints/
 *.i*86
 *.x86_64
 *.hex
+/datasets/facades
+/datasets/wallpapers
+/datasets/wallpapers-old
